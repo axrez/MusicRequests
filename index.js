@@ -6,15 +6,16 @@ const keys = require('./config/keys');
 
 const app = express();
 
-const redirect_uri = process.env.REDIRECT_URI || 'https://localhost:3001/callback';
+const redirect_uri = process.env.REDIRECT_URI || 'http://localhost:3001/callback';
 
 app.get('/login', (req, res) => {
-  let scope = 'user-read-currently-playing';
+  let scope = 'user-read-playback-state user-read-currently-playing user-read-email user-read-private user-read-birthdate';
   res.redirect('https://accounts.spotify.com/authorize?' + 
     queryString.stringify({
       response_type: 'code',
       client_id: keys.spotifyClientId,
-      redirect_uri
+      redirect_uri,
+      scope
     }))
 })
 
@@ -28,19 +29,16 @@ app.get('/callback', (req, res) => {
       grant_type: 'authorization_code'
     },
     headers: {
-      'Authorization': 'Basic ' + (new Buffer(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET).toString('base64'))
+      'Authorization': 'Basic ' + (new Buffer(keys.spotifyClientId + ':' + keys.spotifyClientSecret).toString('base64'))
     },
     json: true
   }
   request.post(authOptions, (error, response, body) => {
     let access_token = body.access_token;
-    let uri = process.env.FRONTEND_URI || 'https://localhost:3000/'
+    let refresh_token = body.refresh_token;
+    let uri = process.env.FRONTEND_URI || 'http://localhost:3000/'
     res.redirect(`${uri}?access_token=${access_token}`);
   })
-})
-
-app.get('/done', (req,res) => {
-  res.send('done');
 })
 
 const PORT = process.env.PORT || 3001;
